@@ -2,20 +2,55 @@
 
 const messageSystem = {
   startFetching() {
+    setInterval(() => {
+      this.fetchMessages();
+    }, 10);
   },
 
   sendMessage(msg) {
-    // https://thecrew.cc/api/message/create.php?token=__TOKEN__ POST
+    // __TOKEN__ POST
+    fetch("https://thecrew.cc/api/message/create.php?token=" +userSystem.token, {
+      method: 'post',
+      body: JSON.stringify({
+        "message": msg
+      })
+    });
+    this.fetchMessages();
   },
 
   fetchMessages() {
-    // https://thecrew.cc/api/message/read.php?token=__TOKEN__ GET
+    // geen Get
+    fetch("https://thecrew.cc/api/message/read.php?token="+userSystem.token)
+      .then(response => response.json())
+      .then(data  => {
+        console.log(data);
+        const container  =  document.getElementById("output");
+        container.innerHTML =  "";
+        data.forEach((test) => {
+          const message  =  `<div class="message">
+          <span class="by">${test.handle}</span>
+          <span class="on">${test.created_at}</span>
+          <p>${test.message}</p>
+        </div>`;
+        container.insertAdjacentHTML("beforeend", message);
+        });
+      });
   }
 };
 
 const userSystem = {
   token: "",
   loggedIn: false,
+
+  checkToken()  {
+    const localToken = this.getToken();
+    const login = document.getElementById("loginWindow");
+    if(localToken  !==  null)  {
+      this.token  =  localToken;
+      messageSystem.fetchMessages();
+      login.style.display  =  "none";
+    }
+  },
 
   saveToken() {
     localStorage.setItem("token", this.token);
@@ -31,6 +66,25 @@ const userSystem = {
 
   login(email, password) {
     // https://thecrew.cc/api/user/login.php POST
+    fetch("https://thecrew.cc/api/user/login.php", {
+      method: 'post',
+      body: JSON.stringify({
+        email: email,
+        password: password
+      })
+    })
+    .then(response => response.json())
+    .then(loginData =>  {
+      this.token = loginData.token;
+      console.log(this.token);
+      messageSystem.fetchMessages();
+      this.saveToken();
+      if(this.token  !==  undefined)  {
+        const login = document.getElementById("loginWindow");
+        login.style.display  =  "none";
+      }
+    });
+
   },
 
   updateUser(password, handle) {
@@ -40,7 +94,28 @@ const userSystem = {
 
 const display = {
   initFields() {
+    let loginForm = document.getElementById("loginForm");
+    loginForm.addEventListener("submit", (e) =>  {
+      e.preventDefault();
+      const email = document.getElementById("emailField").value;
+      const password = document.getElementById("passwordField").value;
+      userSystem.login(email, password);
+    });
+    
+    let messageForm = document.getElementById("messageForm");
+    messageForm.addEventListener("submit", (e) =>  {
+      e.preventDefault();
+      const msg = document.getElementById("messageField").value;
+      messageSystem.sendMessage(msg);
+    });
+
+    let logoutBtn = document.getElementById("options");
+    logoutBtn.addEventListener("click", (e) =>  {
+      userSystem.logout();
+      document.getElementById("loginWindow").style.display  =  "block";
+    });
   }
 };
 
   display.initFields();
+  userSystem.checkToken();

@@ -14,8 +14,11 @@ const messageSystem = {
       body: JSON.stringify({
         "message": msg
       })
+      .then(response => response.json())
+      .then(data =>{
+        this.fetchMessages();
+      })
     });
-    this.fetchMessages();
   },
 
   fetchMessages() {
@@ -23,7 +26,10 @@ const messageSystem = {
     fetch("https://thecrew.cc/api/message/read.php?token="+userSystem.token)
       .then(response => response.json())
       .then(data  => {
-        console.log(data);
+        // data.sort(function(a,b) {
+        //   return b.ID-a.ID;
+        // });
+        data.sort((a,b)  => b.ID-a.ID);
         const container  =  document.getElementById("output");
         container.innerHTML =  "";
         data.forEach((test) => {
@@ -58,6 +64,7 @@ const userSystem = {
 
   getToken() {
     return localStorage.getItem("token");
+    //location.reload();
   },
 
   logout() { 
@@ -77,7 +84,7 @@ const userSystem = {
     .then(loginData =>  {
       this.token = loginData.token;
       console.log(this.token);
-      messageSystem.fetchMessages();
+      messageSystem.startMessages();
       this.saveToken();
       if(this.token  !==  undefined)  {
         const login = document.getElementById("loginWindow");
@@ -107,6 +114,7 @@ const display = {
       e.preventDefault();
       const msg = document.getElementById("messageField").value;
       messageSystem.sendMessage(msg);
+      //msg.value = ""
     });
 
     let logoutBtn = document.getElementById("options");
